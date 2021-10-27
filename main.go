@@ -10,7 +10,11 @@ import (
 type DataSet struct {
 	energy []float64
 	sig []float64
+	thermalSig float64
+	epicadmiumSig []float64
 }
+var thermalEn float64 = 0.0253
+var epicadmiumEn float64 = 0.4
 
 func main() {
 	url := "https://www-nds.iaea.org/exfor/servlet/E4sGetTabSect?SectID=9022734&req=2566&PenSectID=13660487&json"
@@ -21,16 +25,21 @@ func main() {
 	pts := results["datasets"].([]interface{})[0].(map[string]interface{})["pts"].([]interface{}) // accessing pts map as a slice
 	fmt.Printf("%T\n", pts)
 	ds := &DataSet{}
-	fullfilingStruct(pts, ds)
+	fulfilingStruct(pts, ds)
 	fmt.Println(*ds)
 }
 
-func fullfilingStruct(intr []interface{}, DS *DataSet) {
+func fulfilingStruct(intr []interface{}, DS *DataSet) {
 	// intrPrefix := intr.(map[string]interface{})
 	for _, v := range intr {
 		// fmt.Println(v.(map[string]interface{})["E"])
 		DS.energy = append(DS.energy, v.(map[string]interface{})["E"].(float64))
 		DS.sig = append(DS.sig, v.(map[string]interface{})["Sig"].(float64))
+		if v.(map[string]interface{})["E"].(float64) == thermalEn {
+			DS.thermalSig = v.(map[string]interface{})["Sig"].(float64)
+		} else if v.(map[string]interface{})["E"].(float64) > epicadmiumEn {
+			DS.epicadmiumSig = append(DS.epicadmiumSig, v.(map[string]interface{})["E"].(float64))
+		}
 	}
 }
 

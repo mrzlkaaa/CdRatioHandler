@@ -23,11 +23,6 @@ func main() {
 	ds := &DataSet{}
 	fullfilingStruct(pts, ds)
 	fmt.Println(*ds)
-	// mapping := pts.(map[string]interface{}) // accessing 
-	// fmt.Println(pts)
-	// for _,v := range pts {
-	// 	fmt.Println(v.(map[string]interface{})["E"], v.(map[string]interface{})["Sig"])
-	// }
 }
 
 func fullfilingStruct(intr []interface{}, DS *DataSet) {

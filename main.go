@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
+	"bufio"
+	"strings"
 )
 
 type DataSet struct {
@@ -17,6 +20,8 @@ var thermalEn float64 = 0.0253
 var epicadmiumEn float64 = 0.4
 
 func main() {
+	handlingFile("inp.txt")
+	// fmt.Println(data)
 	url := "https://www-nds.iaea.org/exfor/servlet/E4sGetTabSect?SectID=9022734&req=2566&PenSectID=13660487&json"
 	bytesBody := request(&url)
 	var results map[string]interface{}
@@ -26,7 +31,19 @@ func main() {
 	fmt.Printf("%T\n", pts)
 	ds := &DataSet{}
 	fulfilingStruct(pts, ds)
-	fmt.Println(*ds)
+	fmt.Println(ds.thermalSig)
+}
+
+func handlingFile(name string) {
+	file, _ := os.Open(name)
+	scan := bufio.NewScanner(file)
+	var linesArray [][]float64
+	var incr int = 0
+	for scan.Scan(){
+		linesArray[] := strings.Split(scan.Text(), "  ")
+		fmt.Println(splitting)
+		incr++
+	}
 }
 
 func fulfilingStruct(intr []interface{}, DS *DataSet) {

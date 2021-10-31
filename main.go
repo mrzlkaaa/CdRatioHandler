@@ -9,6 +9,7 @@ import (
 	"bufio"
 	"strings"
 	"strconv"
+	"time"
 	// "log"
 )
 
@@ -16,17 +17,19 @@ type DataSet struct {
 	energy []float64
 	sig []float64
 	thermalSig float64
+	epicadmiumEn []float64
 	epicadmiumSig []float64
-	resonseI []float64
+	resonseSig []float64
 	sumI float64
 }
 var thermalEn float64 = 0.0253
-var epicadmiumEn float64 = 0.4
+var epicadmiumEn float64 = 0.4 // rename it
 
 func main() {
+	start := time.Now()
 	array := handlingFile("inp.txt")
 	fmt.Println(array)
-	url := "https://www-nds.iaea.org/exfor/servlet/E4sGetTabSect?SectID=9022734&req=2566&PenSectID=13660487&json"
+	url := "https://www-nds.iaea.org/exfor/servlet/E4sGetTabSect?SectID=9017305&req=11650&PenSectID=13655316&json"
 	bytesBody := request(&url)
 	var results map[string]interface{}
 	err := json.Unmarshal(bytesBody, &results) // parsing json
@@ -35,12 +38,51 @@ func main() {
 	fmt.Printf("%T\n", pts)
 	ds := &DataSet{}
 	fulfilingStruct(pts, ds)
+	cdRatio := cdComputation(array, *ds)
+	fmt.Println(ds.sumI, ds.thermalSig, cdRatio)
+	fmt.Println(time.Since(start))
+
+}
+
+func cdComputation(inpArray [][]float64, DS DataSet) float64 {
+	multiSum := 0.0
+	thermals := inpArray[0][2]*DS.thermalSig
+	fmt.Println(thermals)
+	defer func() {
+		if err := recover(); err != nil {
+			fmt.Println(err)
+			fmt.Println("Finished looping in array in sigms")
+			ratio := thermals/multiSum+1
+			fmt.Println(ratio)
+			// return ratio
+		}
+	}()
+	for _, v1 := range inpArray {
+		lowerL, upperL, flux := v1[0], v1[1], v1[2]
+		fmt.Println(lowerL, upperL)
+		for j := 0; j <= len(DS.epicadmiumEn); j++ {
+			if lowerL < DS.epicadmiumEn[j+1] && DS.epicadmiumEn[j+1] < upperL{
+				multiSum += flux*DS.resonseSig[j]
+							
+			} else {
+				continue
+			}
+		}
+	}
+	ratio := multiSum/thermals-1
+	return ratio
 }
 
 func convertStrings(array []string) []float64{
 	floated := []float64{}
-	for _, v := range array {
+	// floatv := 0.0
+	for ind, v := range array {
 		floatv, _ := strconv.ParseFloat(v, 64)
+		if ind < 2 {
+			floatv = floatv*1E6
+		} else {
+			floatv = floatv*1.12E+13
+		}
 		floated = append(floated, floatv)
 	}
 	return floated
@@ -51,9 +93,8 @@ func handlingFile(name string) [][]float64{
 	scan := bufio.NewScanner(file)
 	var linesArray [][]float64
 	for scan.Scan(){
-		if datArray := strings.Split(scan.Text(), "   "); len(datArray) > 1 {
+		if datArray := strings.Split(scan.Text(), "\t"); len(datArray) > 1 {
 			floatArray := convertStrings(datArray)
-			// fmt.Println(floatArray)
 			linesArray = append(linesArray, floatArray)
 		}
 	}
@@ -67,23 +108,20 @@ func fulfilingStruct(intr []interface{}, DS *DataSet) {
 		if v.(map[string]interface{})["E"].(float64) == thermalEn {
 			DS.thermalSig = v.(map[string]interface{})["Sig"].(float64)
 		} else if v.(map[string]interface{})["E"].(float64) > epicadmiumEn {
-			DS.epicadmiumSig = append(DS.epicadmiumSig, v.(map[string]interface{})["E"].(float64))
+			DS.epicadmiumSig = append(DS.epicadmiumSig, v.(map[string]interface{})["Sig"].(float64))
+			DS.epicadmiumEn = append(DS.epicadmiumEn, v.(map[string]interface{})["E"].(float64))
 		}
 	}
 	defer func() {
 		if err := recover(); err != nil {
-			fmt.Println(err)
+			// fmt.Println(err)
 			fmt.Println("Finished looping in sigms")
 		}
 	}()
-	for i:=0; i <= len(DS.sig); i++ {
-		if DS.energy[i] > 0.5 {
-			DS.resonseI = append(DS.resonseI, DS.sig[i]*(DS.energy[i+1]-DS.energy[i])/average(DS.energy[i+1],DS.energy[i]))
-			DS.sumI += DS.resonseI[i]
-			// fmt.Println(sumI)
-		} else {
-			DS.resonseI = append(DS.resonseI, 0)
-		}
+	for i:=0; i <= len(DS.epicadmiumEn); i++ {
+		DS.resonseSig = append(DS.resonseSig, DS.epicadmiumSig[i]*(DS.epicadmiumEn[i+1]-DS.epicadmiumEn[i])/average(DS.epicadmiumEn[i+1],DS.epicadmiumEn[i]))
+		// resonseI := 
+		DS.sumI += DS.resonseSig[i]
 	}
 }
 

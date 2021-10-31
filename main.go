@@ -29,7 +29,7 @@ func main() {
 	start := time.Now()
 	array := handlingFile("inp.txt")
 	fmt.Println(array)
-	url := "https://www-nds.iaea.org/exfor/servlet/E4sGetTabSect?SectID=9017305&req=11650&PenSectID=13655316&json"
+	url := "https://www-nds.iaea.org/exfor/servlet/E4sGetTabSect?SectID=2292099&req=11678&PenSectID=7664758&json"
 	bytesBody := request(&url)
 	var results map[string]interface{}
 	err := json.Unmarshal(bytesBody, &results) // parsing json
@@ -47,31 +47,18 @@ func main() {
 func cdComputation(inpArray [][]float64, DS DataSet) float64 {
 	multiSum := 0.0
 	thermals := inpArray[0][2]*DS.thermalSig
-	fmt.Println(thermals)
-	defer func() {
-		if err := recover(); err != nil {
-			fmt.Println(err)
-			fmt.Println("Finished looping in array in sigms")
-			ratio := thermals/multiSum+1
-			fmt.Println(ratio)
-			// return ratio
-		}
-	}()
 	for _, v1 := range inpArray {
-		// fmt.Println(v1)
+		Sum := 0.0
 		lowerL, upperL, flux := v1[0], v1[1], v1[2]
-		fmt.Println(lowerL, upperL)
 		for j := 0; j <= len(DS.epicadmiumEn)-1; j++ {
-			if lowerL < DS.epicadmiumEn[j] && DS.epicadmiumEn[j] < upperL{
-				// fmt.Println(multiSum)
-				multiSum += flux*DS.epicadmiumSig[j]*(DS.epicadmiumEn[j+1]-DS.epicadmiumEn[j])/average(DS.epicadmiumEn[j+1],DS.epicadmiumEn[j])
-			} else {
-				continue
+			if lowerL <= DS.epicadmiumEn[j] && DS.epicadmiumEn[j] <+ upperL{
+				Sum += DS.resonseSig[j]
 			}
 		}
+		fmt.Println(Sum)
+		multiSum += flux*Sum
 	}
-	ratio := thermals/multiSum-1
-	return ratio
+	return thermals/multiSum+1
 }
 
 func convertStrings(array []string) []float64{
@@ -123,7 +110,6 @@ func fulfilingStruct(intr []interface{}, DS *DataSet) {
 	}()
 	for i:=0; i <= len(DS.epicadmiumEn); i++ {
 		DS.resonseSig = append(DS.resonseSig, DS.epicadmiumSig[i]*(DS.epicadmiumEn[i+1]-DS.epicadmiumEn[i])/average(DS.epicadmiumEn[i+1],DS.epicadmiumEn[i]))
-		// resonseI := 
 		DS.sumI += DS.resonseSig[i]
 	}
 

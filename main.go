@@ -23,7 +23,7 @@ type DataSet struct {
 	sumI float64
 }
 var thermalEn float64 = 0.0253
-var epicadmiumEn float64 = 0.4 // rename it
+var epicadmiumEn float64 = 0.5 // rename it
 
 func main() {
 	start := time.Now()
@@ -58,18 +58,19 @@ func cdComputation(inpArray [][]float64, DS DataSet) float64 {
 		}
 	}()
 	for _, v1 := range inpArray {
+		// fmt.Println(v1)
 		lowerL, upperL, flux := v1[0], v1[1], v1[2]
 		fmt.Println(lowerL, upperL)
-		for j := 0; j <= len(DS.epicadmiumEn); j++ {
-			if lowerL < DS.epicadmiumEn[j+1] && DS.epicadmiumEn[j+1] < upperL{
-				multiSum += flux*DS.resonseSig[j]
-							
+		for j := 0; j <= len(DS.epicadmiumEn)-1; j++ {
+			if lowerL < DS.epicadmiumEn[j] && DS.epicadmiumEn[j] < upperL{
+				// fmt.Println(multiSum)
+				multiSum += flux*DS.epicadmiumSig[j]*(DS.epicadmiumEn[j+1]-DS.epicadmiumEn[j])/average(DS.epicadmiumEn[j+1],DS.epicadmiumEn[j])
 			} else {
 				continue
 			}
 		}
 	}
-	ratio := multiSum/thermals-1
+	ratio := thermals/multiSum-1
 	return ratio
 }
 
@@ -116,6 +117,8 @@ func fulfilingStruct(intr []interface{}, DS *DataSet) {
 		if err := recover(); err != nil {
 			// fmt.Println(err)
 			fmt.Println("Finished looping in sigms")
+			DS.resonseSig = append(DS.resonseSig, 0)
+			fmt.Println(len(DS.epicadmiumEn), len(DS.resonseSig))
 		}
 	}()
 	for i:=0; i <= len(DS.epicadmiumEn); i++ {
@@ -123,6 +126,7 @@ func fulfilingStruct(intr []interface{}, DS *DataSet) {
 		// resonseI := 
 		DS.sumI += DS.resonseSig[i]
 	}
+
 }
 
 func request(url *string) []byte {
